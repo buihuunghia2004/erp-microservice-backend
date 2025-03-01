@@ -1,0 +1,90 @@
+# Các tệp và thư mục hệ thống
+.DS_Store
+*.log
+*.tmp
+*.bak
+*.swp
+*.swo
+
+# Các thư mục hệ điều hành
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# Các tệp và thư mục build/output
+target/
+build/
+dist/
+out/
+node_modules/
+bower_components/
+
+# Các tệp cấu hình nhạy cảm
+*.env
+.env.*
+!.env.example
+*.properties
+application.properties
+application.yml
+secrets.yml
+
+# Các tệp và thư mục Docker
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.dev.yml
+.Dockerfile.local
+docker/volumes/
+docker/data/
+
+# Các tệp và thư mục Kubernetes
+k8s/local/
+k8s/dev/
+k8s/*.yaml.local
+k8s/*.yaml.dev
+
+# Các tệp và thư mục IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+*.code-workspace
+.project
+.settings/
+.factorypath
+.classpath
+
+# Các tệp và thư mục kiểm thử
+coverage/
+htmlcov/
+*.cover
+.hypothesis/
+.pytest_cache/
+.tox/
+nosetests.xml
+
+# Các tệp tạm của hệ thống CI/CD
+.circleci/config.yml.local
+.github/workflows/local.yml
+
+# Các tệp tài liệu nháp
+*.md~
+*.txt~
+
+# Các tệp nhạy cảm khác
+credentials.json
+config.json
+private_key.pem
+public_key.pem
+
+# Các tệp nhị phân hoặc không cần thiết
+*.class
+*.jar
+*.war
+*.ear
+*.bin
