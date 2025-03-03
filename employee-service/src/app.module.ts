@@ -3,5 +3,6 @@ import generateModulesSet from './utils/modules-set';
 
 @Module({
   imports: generateModulesSet(),
+  // controllers: [UserController]
 })
 export class AppModule {}
