@@ -1,16 +1,8 @@
-// import { Module } from '@nestjs/common';
-// import { AppController } from './app/app.controller';
-// import generateModulesSet from './utils/modules-set';
-
-// @Module({
-//   imports: [],
-//   controllers: [AppController]
-// })
-// export class AppModule {}
 import { Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppService } from './app.service';
 import { AppController } from './app.controller';
+import {AppPort} from '@shared/constants/config.constant'
 
 @Module({
   imports: [
@@ -18,13 +10,13 @@ import { AppController } from './app.controller';
       {
         name: 'USER_SERVICE',
         transport: Transport.TCP,
-        options: { host: 'localhost', port: 3001 },
+        options: { host: 'localhost', port: AppPort.USER_SERVICE_PORT },
       },
-      {
-        name: 'ORDER_SERVICE',
-        transport: Transport.TCP,
-        options: { host: 'localhost', port: 3002 },
-      },
+      // {
+      //   name: 'EMPLOYEE_SERVICE',
+      //   transport: Transport.TCP,
+      //   options: { host: 'localhost', port: AppPort.EMPLOYEE_SERVICE_PORT },
+      // },
     ]),
   ],
   controllers: [AppController],

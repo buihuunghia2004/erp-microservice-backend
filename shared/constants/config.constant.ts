@@ -1,0 +1,5 @@
+export enum AppPort {
+  API_GATEWAY = 3000,
+  USER_SERVICE_PORT = 3001,
+  EMPLOYEE_SERVICE_PORT = 3002,
+}
