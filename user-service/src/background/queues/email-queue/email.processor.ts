@@ -36,6 +36,10 @@ export class EmailProcessor extends WorkerHost {
         return await this.emailQueueService.sendEmailVerification(
           job.data as unknown as IVerifyEmailJob,
         );
+      case JobName.PASSWORD_RESET:
+        return await this.emailQueueService.sendEmailResetPassword(
+          job.data as unknown as IVerifyEmailJob,
+        );
       default:
         throw new Error(`Unknown job name: ${job.name}`);
     }

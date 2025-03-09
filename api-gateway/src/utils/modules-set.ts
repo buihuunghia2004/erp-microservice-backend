@@ -5,7 +5,6 @@ import appConfig from '@/config/app.config';
 import { AllConfigType } from '@/config/config.type';
 import { Environment } from '@/constants/app.constant';
 import databaseConfig from '@/database/config/database.config';
-import { TypeOrmConfigService } from '@/database/typeorm-config.service';
 import mailConfig from '@/mail/config/mail.config';
 import { MailModule } from '@/mail/mail.module';
 import redisConfig from '@/redis/config/redis.config';
@@ -13,7 +12,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ModuleMetadata } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { redisStore } from 'cache-manager-ioredis-yet';
 import {
   AcceptLanguageResolver,
@@ -23,7 +21,6 @@ import {
 } from 'nestjs-i18n';
 import { LoggerModule } from 'nestjs-pino';
 import path from 'path';
-import { DataSource, DataSourceOptions } from 'typeorm';
 import loggerFactory from './logger-factory';
 
 function generateModulesSet() {
@@ -35,17 +32,6 @@ function generateModulesSet() {
     }),
   ];
   let customModules: ModuleMetadata['imports'] = [];
-
-  const dbModule = TypeOrmModule.forRootAsync({
-    useClass: TypeOrmConfigService,
-    dataSourceFactory: async (options: DataSourceOptions) => {
-      if (!options) {
-        throw new Error('Invalid options passed');
-      }
-
-      return new DataSource(options).initialize();
-    },
-  });
 
   const bullModule = BullModule.forRootAsync({
     imports: [ConfigModule],
@@ -133,7 +119,6 @@ function generateModulesSet() {
         bullModule,
         BackgroundModule,
         cacheModule,
-        dbModule,
         i18nModule,
         loggerModule,
         MailModule,
@@ -144,7 +129,6 @@ function generateModulesSet() {
         ApiModule,
         bullModule,
         cacheModule,
-        dbModule,
         i18nModule,
         loggerModule,
         MailModule,
@@ -155,7 +139,6 @@ function generateModulesSet() {
         bullModule,
         BackgroundModule,
         cacheModule,
-        dbModule,
         i18nModule,
         loggerModule,
       ];

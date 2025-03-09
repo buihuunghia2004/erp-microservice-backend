@@ -40,7 +40,6 @@
       "@/redis/*": ["src/redis/*"],
       "@/shared/*": ["src/shared/*"],
       "@/utils/*": ["src/utils/*"],
-      "@shared/*": ["../shared/*"],
     }
   }
 }

@@ -1,4 +1,4 @@
-import { IEmailJob, IVerifyEmailJob } from '@/common/interfaces/job.interface';
+import { IEmailJob, IResetPasswordEmailJob, IVerifyEmailJob } from '@/common/interfaces/job.interface';
 import { Branded } from '@/common/types/types';
 import { AllConfigType } from '@/config/config.type';
 import { SYSTEM_USER_ID } from '@/constants/app.constant';
@@ -10,7 +10,7 @@ import { createCacheKey } from '@/utils/cache.util';
 import { verifyPassword } from '@/utils/password.util';
 import { InjectQueue } from '@nestjs/bullmq';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { randomStringGenerator } from '@nestjs/common/utils/random-string-generator.util';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
@@ -31,6 +31,9 @@ import { RegisterReqDto } from './dto/register.req.dto';
 import { RegisterResDto } from './dto/register.res.dto';
 import { JwtPayloadType } from './types/jwt-payload.type';
 import { JwtRefreshPayloadType } from './types/jwt-refresh-payload.type';
+import { RequireResetPasswordResDto } from './dto/require-reset-password.req.dto';
+import { SubmitResetPasswordResDto } from './dto/submit-reset-password.req.dto';
+import { RpcException } from '@nestjs/microservices';
 
 type Token = Branded<
   {
@@ -59,91 +62,125 @@ export class AuthService {
    * @param dto LoginReqDto
    * @returns LoginResDto
    */
-  async signIn(dto: LoginReqDto): Promise<LoginResDto> {
-    const { email, password } = dto;
-    const user = await this.userRepository.findOne({
-      where: { email },
-      select: ['id', 'email', 'password'],
-    });
+  // async signIn(dto: LoginReqDto): Promise<LoginResDto> {
+  //   const { email, password } = dto;
+  //   const user = await this.userRepository.findOne({
+  //     where: { email },
+  //     select: ['id', 'email', 'password'],
+  //   });
 
-    const isPasswordValid =
-      user && (await verifyPassword(password, user.password));
+  async requireResetPassword(dto: RequireResetPasswordResDto): Promise<string> {
+    //check user already exits
+    const user = await this.userRepository.findOneBy({email: dto.email})
+    if(!user) throw new NotFoundException(`Not found user by email: ${dto.email}`)
 
-    if (!isPasswordValid) {
-      throw new UnauthorizedException();
-    }
-
-    const hash = crypto
-      .createHash('sha256')
-      .update(randomStringGenerator())
-      .digest('hex');
-
-    const session = new SessionEntity({
-      hash,
-      userId: user.id,
-      createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID,
-    });
-    await session.save();
-
-    const token = await this.createToken({
-      id: user.id,
-      sessionId: session.id,
-      hash,
-    });
-
-    return plainToInstance(LoginResDto, {
-      userId: user.id,
-      ...token,
-    });
-  }
-
-  async register(dto: RegisterReqDto): Promise<RegisterResDto> {
-    // Check if the user already exists
-    const isExistUser = await UserEntity.exists({
-      where: { email: dto.email },
-    });
-
-    if (isExistUser) {
-      throw new ValidationException(ErrorCode.E003);
-    }
-
-    // Register user
-    const user = new UserEntity({
-      email: dto.email,
-      password: dto.password,
-      createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID,
-    });
-
-    await user.save();
-
-    // Send email verification
-    const token = await this.createVerificationToken({ id: user.id });
+    //send mail to reset-pasword
+    const token = await this.createForgotToken({ id: user.id });
     const tokenExpiresIn = this.configService.getOrThrow(
-      'auth.confirmEmailExpires',
+      'auth.forgotExpires',
       {
         infer: true,
       },
     );
     await this.cacheManager.set(
-      createCacheKey(CacheKey.EMAIL_VERIFICATION, user.id),
+      createCacheKey(CacheKey.PASSWORD_RESET, user.id),
       token,
       ms(tokenExpiresIn),
     );
     await this.emailQueue.add(
-      JobName.EMAIL_VERIFICATION,
+      JobName.PASSWORD_RESET,
       {
         email: dto.email,
         token,
-      } as IVerifyEmailJob,
+      } as IResetPasswordEmailJob,
       { attempts: 3, backoff: { type: 'exponential', delay: 60000 } },
     );
 
-    return plainToInstance(RegisterResDto, {
-      userId: user.id,
-    });
+    return 'Require reset password success!'
   }
+
+  async submitResetPassword(dto: SubmitResetPasswordResDto): Promise<void> {
+    
+  }
+
+  //   const isPasswordValid =
+  //     user && (await verifyPassword(password, user.password));
+
+  //   if (!isPasswordValid) {
+  //     throw new UnauthorizedException();
+  //   }
+
+  //   const hash = crypto
+  //     .createHash('sha256')
+  //     .update(randomStringGenerator())
+  //     .digest('hex');
+
+  //   const session = new SessionEntity({
+  //     hash,
+  //     userId: user.id,
+  //     createdBy: SYSTEM_USER_ID,
+  //     updatedBy: SYSTEM_USER_ID,
+  //   });
+  //   await session.save();
+
+  //   const token = await this.createToken({
+  //     id: user.id,
+  //     sessionId: session.id,
+  //     hash,
+  //   });
+
+  //   return plainToInstance(LoginResDto, {
+  //     userId: user.id,
+  //     ...token,
+  //   });
+  // }
+
+  // async register(dto: RegisterReqDto): Promise<RegisterResDto> {
+  //   // Check if the user already exists
+  //   const isExistUser = await UserEntity.exists({
+  //     where: { email: dto.email },
+  //   });
+
+  //   if (isExistUser) {
+  //     throw new ValidationException(ErrorCode.E003);
+  //   }
+
+  //   // Register user
+  //   const user = new UserEntity({
+  //     email: dto.email,
+  //     password: dto.password,
+  //     createdBy: SYSTEM_USER_ID,
+  //     updatedBy: SYSTEM_USER_ID,
+  //   });
+
+  //   await user.save();
+
+  //   // Send email verification
+  //   const token = await this.createVerificationToken({ id: user.id });
+  //   const tokenExpiresIn = this.configService.getOrThrow(
+  //     'auth.confirmEmailExpires',
+  //     {
+  //       infer: true,
+  //     },
+  //   );
+  //   await this.cacheManager.set(
+  //     createCacheKey(CacheKey.EMAIL_VERIFICATION, user.id),
+  //     token,
+  //     ms(tokenExpiresIn),
+  //   );
+  //   await this.emailQueue.add(
+  //     JobName.EMAIL_VERIFICATION,
+  //     {
+  //       email: dto.email,
+  //       token,
+  //     } as IVerifyEmailJob,
+  //     { attempts: 3, backoff: { type: 'exponential', delay: 60000 } },
+  //   );
+
+  //   return plainToInstance(RegisterResDto, {
+  //     userId: user.id,
+  //   });
+  // }
 
   async logout(userToken: JwtPayloadType): Promise<void> {
     await this.cacheManager.store.set<boolean>(
@@ -154,32 +191,32 @@ export class AuthService {
     await SessionEntity.delete(userToken.sessionId);
   }
 
-  async refreshToken(dto: RefreshReqDto): Promise<RefreshResDto> {
-    const { sessionId, hash } = this.verifyRefreshToken(dto.refreshToken);
-    const session = await SessionEntity.findOneBy({ id: sessionId });
+  // async refreshToken(dto: RefreshReqDto): Promise<RefreshResDto> {
+  //   const { sessionId, hash } = this.verifyRefreshToken(dto.refreshToken);
+  //   const session = await SessionEntity.findOneBy({ id: sessionId });
 
-    if (!session || session.hash !== hash) {
-      throw new UnauthorizedException();
-    }
+  //   if (!session || session.hash !== hash) {
+  //     throw new UnauthorizedException();
+  //   }
 
-    const user = await this.userRepository.findOneOrFail({
-      where: { id: session.userId },
-      select: ['id'],
-    });
+  //   const user = await this.userRepository.findOneOrFail({
+  //     where: { id: session.userId },
+  //     select: ['id'],
+  //   });
 
-    const newHash = crypto
-      .createHash('sha256')
-      .update(randomStringGenerator())
-      .digest('hex');
+  //   const newHash = crypto
+  //     .createHash('sha256')
+  //     .update(randomStringGenerator())
+  //     .digest('hex');
 
-    SessionEntity.update(session.id, { hash: newHash });
+  //   SessionEntity.update(session.id, { hash: newHash });
 
-    return await this.createToken({
-      id: user.id,
-      sessionId: session.id,
-      hash: newHash,
-    });
-  }
+  //   return await this.createToken({
+  //     id: user.id,
+  //     sessionId: session.id,
+  //     hash: newHash,
+  //   });
+  // }
 
   async verifyAccessToken(token: string): Promise<JwtPayloadType> {
     let payload: JwtPayloadType;
@@ -203,17 +240,17 @@ export class AuthService {
     return payload;
   }
 
-  private verifyRefreshToken(token: string): JwtRefreshPayloadType {
-    try {
-      return this.jwtService.verify(token, {
-        secret: this.configService.getOrThrow('auth.refreshSecret', {
-          infer: true,
-        }),
-      });
-    } catch {
-      throw new UnauthorizedException();
-    }
-  }
+  // private verifyRefreshToken(token: string): JwtRefreshPayloadType {
+  //   try {
+  //     return this.jwtService.verify(token, {
+  //       secret: this.configService.getOrThrow('auth.refreshSecret', {
+  //         infer: true,
+  //       }),
+  //     });
+  //   } catch {
+  //     throw new UnauthorizedException();
+  //   }
+  // }
 
   private async createVerificationToken(data: { id: string }): Promise<string> {
     return await this.jwtService.signAsync(
@@ -230,48 +267,84 @@ export class AuthService {
       },
     );
   }
-
-  private async createToken(data: {
-    id: string;
-    sessionId: string;
-    hash: string;
-  }): Promise<Token> {
-    const tokenExpiresIn = this.configService.getOrThrow('auth.expires', {
-      infer: true,
-    });
-    const tokenExpires = Date.now() + ms(tokenExpiresIn);
-
-    const [accessToken, refreshToken] = await Promise.all([
-      await this.jwtService.signAsync(
-        {
-          id: data.id,
-          role: '', // TODO: add role
-          sessionId: data.sessionId,
-        },
-        {
-          secret: this.configService.getOrThrow('auth.secret', { infer: true }),
-          expiresIn: tokenExpiresIn,
-        },
-      ),
-      await this.jwtService.signAsync(
-        {
-          sessionId: data.sessionId,
-          hash: data.hash,
-        },
-        {
-          secret: this.configService.getOrThrow('auth.refreshSecret', {
-            infer: true,
-          }),
-          expiresIn: this.configService.getOrThrow('auth.refreshExpires', {
-            infer: true,
-          }),
-        },
-      ),
-    ]);
-    return {
-      accessToken,
-      refreshToken,
-      tokenExpires,
-    } as Token;
+  private async createForgotToken(data: { id: string }): Promise<string> {
+    return await this.jwtService.signAsync(
+      {
+        id: data.id,
+      },
+      {
+        secret: this.configService.getOrThrow('auth.forgotSecret', {
+          infer: true,
+        }),
+        expiresIn: this.configService.getOrThrow('auth.forgotExpires', {
+          infer: true,
+        }),
+      },
+    );
   }
+  async verifyForgotToken(token: string): Promise<JwtPayloadType> {
+    let payload: JwtPayloadType;
+    try {
+      payload = this.jwtService.verify(token, {
+        secret: this.configService.getOrThrow('auth.forgotSecret', { infer: true }),
+      });
+    } catch {
+      throw new UnauthorizedException();
+    }
+
+    // Force logout if the session is in the blacklist
+    const isSessionBlacklisted = await this.cacheManager.store.get<boolean>(
+      createCacheKey(CacheKey.SESSION_BLACKLIST, payload.sessionId),
+    );
+
+    if (isSessionBlacklisted) {
+      throw new UnauthorizedException();
+    }
+
+    return payload;
+  }
+
+  // private async createToken(data: {
+  //   id: string;
+  //   sessionId: string;
+  //   hash: string;
+  // }): Promise<Token> {
+  //   const tokenExpiresIn = this.configService.getOrThrow('auth.expires', {
+  //     infer: true,
+  //   });
+  //   const tokenExpires = Date.now() + ms(tokenExpiresIn);
+
+  //   const [accessToken, refreshToken] = await Promise.all([
+  //     await this.jwtService.signAsync(
+  //       {
+  //         id: data.id,
+  //         role: '', // TODO: add role
+  //         sessionId: data.sessionId,
+  //       },
+  //       {
+  //         secret: this.configService.getOrThrow('auth.secret', { infer: true }),
+  //         expiresIn: tokenExpiresIn,
+  //       },
+  //     ),
+  //     await this.jwtService.signAsync(
+  //       {
+  //         sessionId: data.sessionId,
+  //         hash: data.hash,
+  //       },
+  //       {
+  //         secret: this.configService.getOrThrow('auth.refreshSecret', {
+  //           infer: true,
+  //         }),
+  //         expiresIn: this.configService.getOrThrow('auth.refreshExpires', {
+  //           infer: true,
+  //         }),
+  //       },
+  //     ),
+  //   ]);
+  //   return {
+  //     accessToken,
+  //     refreshToken,
+  //     tokenExpires,
+  //   } as Token;
+  // }
 }

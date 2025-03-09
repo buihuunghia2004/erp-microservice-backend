@@ -10,6 +10,9 @@ import { RefreshResDto } from './dto/refresh.res.dto';
 import { RegisterReqDto } from './dto/register.req.dto';
 import { RegisterResDto } from './dto/register.res.dto';
 import { JwtPayloadType } from './types/jwt-payload.type';
+import { RequireResetPasswordResDto } from './dto/require-reset-password.req.dto';
+import { MessagePattern } from '@nestjs/microservices';
+import { SubmitResetPasswordResDto } from './dto/submit-reset-password.req.dto';
 
 @ApiTags('auth')
 @Controller({
@@ -19,66 +22,76 @@ import { JwtPayloadType } from './types/jwt-payload.type';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @ApiPublic({
-    type: LoginResDto,
-    summary: 'Sign in',
-  })
-  @Post('email/login')
-  async signIn(@Body() userLogin: LoginReqDto): Promise<LoginResDto> {
-    return await this.authService.signIn(userLogin);
+  // @ApiPublic({
+  //   type: LoginResDto,
+  //   summary: 'Sign in',
+  // })
+  // @Post('email/login')
+  // async signIn(@Body() userLogin: LoginReqDto): Promise<LoginResDto> {
+  //   return await this.authService.signIn(userLogin);
+  // }
+
+  @MessagePattern({ cmd: 'require_reset_password' })
+  async requireResetPassword(dto: RequireResetPasswordResDto) {
+    return await this.authService.requireResetPassword(dto)
   }
 
-  @ApiPublic()
-  @Post('email/register')
-  async register(@Body() dto: RegisterReqDto): Promise<RegisterResDto> {
-    return await this.authService.register(dto);
+  @MessagePattern({ cmd: 'submit_reset_password' })
+  async submitResetPassword(dto: SubmitResetPasswordResDto) {
+    return await this.authService.submitResetPassword(dto)
   }
 
-  @ApiAuth({
-    summary: 'Logout',
-    errorResponses: [400, 401, 403, 500],
-  })
-  @Post('logout')
-  async logout(@CurrentUser() userToken: JwtPayloadType): Promise<void> {
-    await this.authService.logout(userToken);
-  }
+  // @ApiPublic()
+  // @Post('email/register')
+  // async register(@Body() dto: RegisterReqDto): Promise<RegisterResDto> {
+  //   return await this.authService.register(dto);
+  // }
 
-  @ApiPublic({
-    type: RefreshResDto,
-    summary: 'Refresh token',
-  })
-  @Post('refresh')
-  async refresh(@Body() dto: RefreshReqDto): Promise<RefreshResDto> {
-    return await this.authService.refreshToken(dto);
-  }
+  // @ApiAuth({
+  //   summary: 'Logout',
+  //   errorResponses: [400, 401, 403, 500],
+  // })
+  // @Post('logout')
+  // async logout(@CurrentUser() userToken: JwtPayloadType): Promise<void> {
+  //   await this.authService.logout(userToken);
+  // }
 
-  @ApiPublic()
-  @Post('forgot-password')
-  async forgotPassword() {
-    return 'forgot-password';
-  }
+  // @ApiPublic({
+  //   type: RefreshResDto,
+  //   summary: 'Refresh token',
+  // })
+  // @Post('refresh')
+  // async refresh(@Body() dto: RefreshReqDto): Promise<RefreshResDto> {
+  //   return await this.authService.refreshToken(dto);
+  // }
 
-  @ApiPublic()
-  @Post('verify/forgot-password')
-  async verifyForgotPassword() {
-    return 'verify-forgot-password';
-  }
+  // @ApiPublic()
+  // @Post('forgot-password')
+  // async forgotPassword() {
+  //   return 'forgot-password';
+  // }
 
-  @ApiPublic()
-  @Post('reset-password')
-  async resetPassword() {
-    return 'reset-password';
-  }
+  // @ApiPublic()
+  // @Post('verify/forgot-password')
+  // async verifyForgotPassword() {
+  //   return 'verify-forgot-password';
+  // }
 
-  @ApiPublic()
-  @Get('verify/email')
-  async verifyEmail() {
-    return 'verify-email';
-  }
+  // @ApiPublic()
+  // @Post('reset-password')
+  // async resetPassword() {
+  //   return 'reset-password';
+  // }
 
-  @ApiPublic()
-  @Post('verify/email/resend')
-  async resendVerifyEmail() {
-    return 'resend-verify-email';
-  }
+  // @ApiPublic()
+  // @Get('verify/email')
+  // async verifyEmail() {
+  //   return 'verify-email';
+  // }
+ 
+  // @ApiPublic()
+  // @Post('verify/email/resend')
+  // async resendVerifyEmail() {
+  //   return 'resend-verify-email';
+  // }
 }

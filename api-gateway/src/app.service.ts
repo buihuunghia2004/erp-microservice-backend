@@ -5,7 +5,6 @@ import { ClientTCP } from '@nestjs/microservices';
 export class AppService {
   constructor(
     @Inject('USER_SERVICE') private readonly userService: ClientTCP,
-    @Inject('ORDER_SERVICE') private readonly orderService: ClientTCP,
   ) {}
 
   async getUserAndOrders(userId: number) {

@@ -62,9 +62,9 @@ export class UserEntity extends AbstractEntity {
   @OneToMany(() => SessionEntity, (session) => session.user)
   sessions?: SessionEntity[];
 
-  @ManyToMany(() => RoleEntity, (role) => role.user)
+  @ManyToMany(() => RoleEntity)
   @JoinTable()
-  roles: RoleEntity[]
+  roles?: RoleEntity[]
 
   @BeforeInsert()
   @BeforeUpdate()

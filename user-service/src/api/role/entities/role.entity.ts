@@ -1,11 +1,9 @@
-import { UserEntity } from '@/api/user/entities/user.entity';
 import { Uuid } from '@/common/types/common.type';
 import { AbstractEntity } from '@/database/entities/abstract.entity';
-import {UserRole} from '@shared/constants/role.constant'
+import {UserRole} from '@/constants/role.constant'
 import {
   Column,
   Entity,
-  ManyToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -21,9 +19,6 @@ export class RoleEntity extends AbstractEntity {
   })
   id!: Uuid;
 
-  @Column({enum: UserRole})
+  @Column({type: 'enum',enum: UserRole})
   name!: UserRole;
-
-  @ManyToMany(() => UserEntity, (user) => user.roles)
-  user?: UserEntity
 }

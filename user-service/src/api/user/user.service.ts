@@ -28,101 +28,100 @@ export class UserService {
     private readonly userRepository: Repository<UserEntity>,
   ) {}
 
-  async create(dto: CreateUserReqDto): Promise<UserResDto> {
-    const { username, email, password, bio, image } = dto;
+  // async create(dto: CreateUserReqDto): Promise<UserResDto> {
+  //   const { username, email, password, bio, image } = dto;
 
-    // check uniqueness of username/email
-    const user = await this.userRepository.findOne({
-      where: [
-        {
-          username,
-        },
-        {
-          email,
-        },
-      ],
-    });
+  //   // check uniqueness of username/email
+  //   const user = await this.userRepository.findOne({
+  //     where: [
+  //       {
+  //         username,
+  //       },
+  //       {
+  //         email,
+  //       },
+  //     ],
+  //   });
 
-    if (user) {
-      throw new ValidationException(ErrorCode.E001);
-    }
+  //   if (user) {
+  //     throw new ValidationException(ErrorCode.E001);
+  //   }
 
-    const newUser = new UserEntity({
-      username,
-      email,
-      password,
-      bio,
-      image,
-      createdBy: SYSTEM_USER_ID,
-      updatedBy: SYSTEM_USER_ID,
-    });
+  //   const newUser = new UserEntity({
+  //     username,
+  //     email,
+  //     password,
+  //     bio,
+  //     image,
+  //     createdBy: SYSTEM_USER_ID,
+  //     updatedBy: SYSTEM_USER_ID,
+  //   });
 
-    const savedUser = await this.userRepository.save(newUser);
-    this.logger.debug(savedUser);
+  //   const savedUser = await this.userRepository.save(newUser);
+  //   this.logger.debug(savedUser);
 
-    return plainToInstance(UserResDto, savedUser);
-  }
+  //   return plainToInstance(UserResDto, savedUser);
+  // }
 
-  async findAll(
-    reqDto: ListUserReqDto,
-  ): Promise<OffsetPaginatedDto<UserResDto>> {
-    const query = this.userRepository
-      .createQueryBuilder('user')
-      .orderBy('user.createdAt', 'DESC');
-    const [users, metaDto] = await paginate<UserEntity>(query, reqDto, {
-      skipCount: false,
-      takeAll: false,
-    });
-    return new OffsetPaginatedDto(plainToInstance(UserResDto, users), metaDto);
-  }
+  // async findAll(
+  //   reqDto: ListUserReqDto,
+  // ): Promise<OffsetPaginatedDto<UserResDto>> {
+  //   const query = this.userRepository
+  //     .createQueryBuilder('user')
+  //     .orderBy('user.createdAt', 'DESC');
+  //   const [users, metaDto] = await paginate<UserEntity>(query, reqDto, {
+  //     skipCount: false,
+  //     takeAll: false,
+  //   });
+  //   return new OffsetPaginatedDto(plainToInstance(UserResDto, users), metaDto);
+  // }
 
-  async loadMoreUsers(
-    reqDto: LoadMoreUsersReqDto,
-  ): Promise<CursorPaginatedDto<UserResDto>> {
-    const queryBuilder = this.userRepository.createQueryBuilder('user');
-    const paginator = buildPaginator({
-      entity: UserEntity,
-      alias: 'user',
-      paginationKeys: ['createdAt'],
-      query: {
-        limit: reqDto.limit,
-        order: 'DESC',
-        afterCursor: reqDto.afterCursor,
-        beforeCursor: reqDto.beforeCursor,
-      },
-    });
+  // async loadMoreUsers(
+  //   reqDto: LoadMoreUsersReqDto,
+  // ): Promise<CursorPaginatedDto<UserResDto>> {
+  //   const queryBuilder = this.userRepository.createQueryBuilder('user');
+  //   const paginator = buildPaginator({
+  //     entity: UserEntity,
+  //     alias: 'user',
+  //     paginationKeys: ['createdAt'],
+  //     query: {
+  //       limit: reqDto.limit,
+  //       order: 'DESC',
+  //       afterCursor: reqDto.afterCursor,
+  //       beforeCursor: reqDto.beforeCursor,
+  //     },
+  //   });
 
-    const { data, cursor } = await paginator.paginate(queryBuilder);
+  //   const { data, cursor } = await paginator.paginate(queryBuilder);
 
-    const metaDto = new CursorPaginationDto(
-      data.length,
-      cursor.afterCursor,
-      cursor.beforeCursor,
-      reqDto,
-    );
+  //   const metaDto = new CursorPaginationDto(
+  //     data.length,
+  //     cursor.afterCursor,
+  //     cursor.beforeCursor,
+  //     reqDto,
+  //   );
 
-    return new CursorPaginatedDto(plainToInstance(UserResDto, data), metaDto);
-  }
+  //   return new CursorPaginatedDto(plainToInstance(UserResDto, data), metaDto);
+  // }
 
-  async findOne(id: Uuid): Promise<UserResDto> {
-    assert(id, 'id is required');
-    const user = await this.userRepository.findOneByOrFail({ id });
+  // async findOne(id: Uuid): Promise<UserResDto> {
+  //   assert(id, 'id is required');
+  //   const user = await this.userRepository.findOneByOrFail({ id });
 
-    return user.toDto(UserResDto);
-  }
+  //   return user.toDto(UserResDto);
+  // }
 
-  async update(id: Uuid, updateUserDto: UpdateUserReqDto) {
-    const user = await this.userRepository.findOneByOrFail({ id });
+  // async update(id: Uuid, updateUserDto: UpdateUserReqDto) {
+  //   const user = await this.userRepository.findOneByOrFail({ id });
 
-    user.bio = updateUserDto.bio;
-    user.image = updateUserDto.image;
-    user.updatedBy = SYSTEM_USER_ID;
+  //   user.image = updateUserDto.image;
+  //   user.updatedBy = SYSTEM_USER_ID;
 
-    await this.userRepository.save(user);
-  }
+  //   await this.userRepository.save(user);
+  // }
 
-  async remove(id: Uuid) {
-    await this.userRepository.findOneByOrFail({ id });
-    await this.userRepository.softDelete(id);
-  }
+  // async remove(id: Uuid) {
+  //   await this.userRepository.findOneByOrFail({ id });
+  //   await this.userRepository.softDelete(id);
+  // }
 }

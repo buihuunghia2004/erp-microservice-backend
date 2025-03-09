@@ -15,7 +15,7 @@ import {
   UnprocessableEntityException,
   ValidationError,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { RpcException } from '@nestjs/microservices';
 import { STATUS_CODES } from 'http';
 import { I18nContext } from 'nestjs-i18n';
 import { EntityNotFoundError, QueryFailedError } from 'typeorm';
@@ -23,20 +23,16 @@ import { EntityNotFoundError, QueryFailedError } from 'typeorm';
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private i18n: I18nContext<I18nTranslations>;
-  private debug: boolean = false;
   private readonly logger = new Logger(GlobalExceptionFilter.name);
-
-  constructor(private readonly configService: ConfigService<AllConfigType>) {}
 
   catch(exception: any, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse();
-    const request = ctx.getRequest();
+    const request = ctx.getRequest();    
 
     this.i18n = request.i18nContext;
-    this.debug = this.configService.getOrThrow('app.debug', { infer: true });
 
-    let error: ErrorDto;
+    let error: ErrorDto;    
 
     if (exception instanceof UnprocessableEntityException) {
       error = this.handleUnprocessableEntityException(exception);
@@ -44,19 +40,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       error = this.handleValidationException(exception);
     } else if (exception instanceof HttpException) {
       error = this.handleHttpException(exception);
+    } else if (exception instanceof RpcException) {      
+      error = this.handleRpcException(exception);
     } else if (exception instanceof QueryFailedError) {
       error = this.handleQueryFailedError(exception);
     } else if (exception instanceof EntityNotFoundError) {
       error = this.handleEntityNotFoundError(exception);
     } else {
       error = this.handleError(exception);
-    }
-
-    if (this.debug) {
-      error.stack = exception.stack;
-      error.trace = exception;
-
-      this.logger.debug(error);
     }
 
     response.status(error.statusCode).json(error);
@@ -107,8 +98,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       errorCode:
         Object.keys(ErrorCode)[Object.values(ErrorCode).indexOf(r.errorCode)],
       message:
-        r.message ||
-        this.i18n.t(r.errorCode as unknown as keyof I18nTranslations),
+        r.message
     };
 
     this.logger.debug(exception);
@@ -128,6 +118,26 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       statusCode,
       error: STATUS_CODES[statusCode],
       message: exception.message,
+    };
+
+    this.logger.debug(exception);
+
+    return errorRes;
+  }
+
+  /**
+   * Handles HttpException
+   * @param exception HttpException
+   * @returns ErrorDto
+   */
+  private handleRpcException(exception: RpcException): any {
+    const error = exception.getError() as {statusCode: number, message: string};
+    
+    const errorRes = {
+      timestamp: new Date().toISOString(),
+      statusCode: error.statusCode,
+      error: STATUS_CODES[error.statusCode],
+      message: error.message,
     };
 
     this.logger.debug(exception);
