@@ -101,9 +101,7 @@ export class AuthController {
   async resetPassword(
     @Body() body: SubmitResetPasswordResDto
   ) {
-    return await this.userService
-    .send({ cmd: 'submit_reset_password' }, body)
-    .toPromise();
+    return await firstValueFrom(this.userService.send({ cmd: 'submit_reset_password' }, body)) 
   }
 
   @ApiPublic()
